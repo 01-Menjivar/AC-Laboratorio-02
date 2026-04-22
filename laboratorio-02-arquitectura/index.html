@@ -387,30 +387,48 @@ mi_subrutina:
     
       <google-codelab-step label="Ejercicios e Indicaciones de entrega" duration="0">
         <h2 is-upgraded>Ejercicio 1 — Área y perímetro de un rectángulo</h2>
-<p><strong>Descripción:</strong> Dado el ancho y el alto de un rectángulo cargados en <code>BL</code> y <code>CL</code> respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.</p>
+<p><strong>Descripción:</strong> Implementaremos un programa que calcule el área y el perímetro de un rectángulo con dimensiones predefinidas (ancho = 12, alto = 7). El objetivo es aplicar una estructura modular con subrutinas para la carga de datos y los cálculos matemáticos, almacenando los resultados obtenidos en direcciones específicas de memoria.</p>
 <p><strong>Requisitos:</strong></p>
 <ul>
-<li>Calcular el área (<code>ancho × alto</code>) con <code>MUL</code> dentro de una subrutina <code>calc_area</code>. Resultado en <code>AX</code>.</li>
-<li>Calcular el perímetro (<code>2 × (ancho + alto)</code>) con <code>ADD</code> y <code>MUL</code> dentro de una subrutina <code>calc_perimetro</code>. Resultado en <code>AX</code>.</li>
-<li>El <code>main</code> llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria: <ul>
-<li>Área en <code>[200H]</code></li>
-<li>Perímetro en <code>[202H]</code></li>
+<li><strong>Carga de datos:</strong> Implementar una subrutina <code>cargar_datos</code> que asigne los valores iniciales (12 para el ancho y 7 para el alto) a los registros <code>AL</code> y <code>BL</code> respectivamente.</li>
+<li><strong>Subrutina de Área:</strong><ul>
+<li>Crear la función <code>calc_area</code> que calcule <code>ancho × alto</code> utilizando la instrucción <code>MUL</code>.</li>
+<li>El resultado final debe quedar en <code>AX</code>.</li>
+<li>El <code>main</code> debe invocar esta subrutina y guardar el valor en la dirección <code>[200H]</code>.</li>
 </ul>
 </li>
+<li><strong>Subrutina de Perímetro:</strong><ul>
+<li>Crear la función <code>calc_perimetro</code> que realice el cálculo <code>2 × (ancho + alto)</code>.</li>
+<li>Puedes utilizar un registro auxiliar (como <code>CL</code>) para almacenar el factor 2 antes de multiplicar.</li>
+<li>El <code>main</code> debe invocar esta subrutina y guardar el valor resultante en la dirección <code>[202H]</code>.</li>
+</ul>
+</li>
+<li><strong>Flujo del programa:</strong> El <code>main</code> debe coordinar las llamadas secuencialmente, asegurándose de que los registros tengan los valores correctos antes de realizar cada cálculo (recuerda que instrucciones como <code>MUL</code> modifican el registro <code>AX</code>).</li>
 </ul>
 <h2 is-upgraded>Ejercicio 2 — Factura con descuento</h2>
-<p><strong>Descripción:</strong> Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en <code>AX</code>. Nuestro programa calculará el descuento y el total a pagar.</p>
-<p>Usa el subtotal = 240.</p>
+<p><strong>Descripción:</strong> Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal predefinido (240). El programa calculará tanto el monto del descuento como el total final a pagar, empleando una estructura modular de subrutinas y persistiendo los resultados en memoria.</p>
 <p><strong>Requisitos:</strong></p>
 <ul>
-<li>Calcular el descuento con la fórmula <code>(subtotal × 15) / 100</code>. Resultado en <code>AL</code>.</li>
-<li>Calcular el total restando el descuento al subtotal. Resultado en <code>AX</code>.</li>
-<li>Organizar la lógica en tres subrutinas: <ul>
-<li><code>calc_descuento</code> — realiza la multiplicación y la división; deja el descuento en <code>AL</code>.</li>
-<li><code>calc_total</code> — resta el descuento al subtotal; deja el total en <code>AX</code>.</li>
-<li><code>guardar_resultados</code> — escribe el descuento en <code>[300H]</code> y el total en <code>[302H]</code>.</li>
+<li><strong>Limpieza inicial:</strong> Implementar una subrutina <code>clean</code> que ponga en cero los registros <code>AX</code>, <code>BX</code>, <code>CX</code> y <code>DX</code> antes de realizar cualquier operación.</li>
+<li><strong>Subrutina de Descuento:</strong><ul>
+<li>Crear la función <code>calc_descuento</code> que aplique la fórmula: <code>(subtotal × 15) / 100</code>.</li>
+<li>El resultado del descuento debe quedar en el registro <code>AL</code>.</li>
 </ul>
 </li>
+<li><strong>Subrutina de Total:</strong><ul>
+<li>Crear la función <code>calc_total</code> que reste el monto del descuento al subtotal original.</li>
+<li>El resultado del total a pagar debe quedar en el registro <code>BX</code>.</li>
+</ul>
+</li>
+<li><strong>Subrutina de Almacenamiento:</strong><ul>
+<li>Crear la función <code>guardar_resultados</code> que escriba los valores finales en memoria: <ul>
+<li>Descuento en la dirección <code>[300H]</code>.</li>
+<li>Total final en la dirección <code>[302H]</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Flujo principal:</strong> El <code>main</code> coordinará las llamadas en este orden: <code>clean</code>, carga del subtotal (240) en <code>AX</code>, <code>calc_descuento</code>, <code>calc_total</code> y <code>guardar_resultados</code>.</li>
 </ul>
 <h2 is-upgraded>Indicaciones de entrega</h2>
 <p>Los ejercicios realizados en este laboratorio deben entregarse a través de la plataforma <strong>Moodle</strong>. Por favor, asegúrate de cumplir con los siguientes requisitos:</p>

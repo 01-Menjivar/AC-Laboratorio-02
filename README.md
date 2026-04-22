@@ -397,30 +397,39 @@ mi_subrutina:
 
 ### Ejercicio 1 — Área y perímetro de un rectángulo
 
-**Descripción:** Dado el ancho y el alto de un rectángulo cargados en `BL` y `CL` respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.
+**Descripción:** Implementaremos un programa que calcule el área y el perímetro de un rectángulo con dimensiones predefinidas (ancho = 12, alto = 7). El objetivo es aplicar una estructura modular con subrutinas para la carga de datos y los cálculos matemáticos, almacenando los resultados obtenidos en direcciones específicas de memoria.
 
 **Requisitos:**
 
-*   Calcular el área (`ancho × alto`) con `MUL` dentro de una subrutina `calc_area`. Resultado en `AX`.
-*   Calcular el perímetro (`2 × (ancho + alto)`) con `ADD` y `MUL` dentro de una subrutina `calc_perimetro`. Resultado en `AX`.
-*   El `main` llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria:
-    *   Área en `[200H]`
-    *   Perímetro en `[202H]`
+- **Carga de datos:** Implementar una subrutina `cargar_datos` que asigne los valores iniciales (12 para el ancho y 7 para el alto) a los registros `AL` y `BL` respectivamente.
+- **Subrutina de Área:**
+  - Crear la función `calc_area` que calcule `ancho × alto` utilizando la instrucción `MUL`.
+  - El resultado final debe quedar en `AX`.
+  - El `main` debe invocar esta subrutina y guardar el valor en la dirección `[200H]`.
+- **Subrutina de Perímetro:**
+  - Crear la función `calc_perimetro` que realice el cálculo `2 × (ancho + alto)`.
+  - Puedes utilizar un registro auxiliar (como `CL`) para almacenar el factor 2 antes de multiplicar.
+  - El `main` debe invocar esta subrutina y guardar el valor resultante en la dirección `[202H]`.
+- **Flujo del programa:** El `main` debe coordinar las llamadas secuencialmente, asegurándose de que los registros tengan los valores correctos antes de realizar cada cálculo (recuerda que instrucciones como `MUL` modifican el registro `AX`).
 
 ### Ejercicio 2 — Factura con descuento
 
-**Descripción:** Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en `AX`. Nuestro programa calculará el descuento y el total a pagar.
-
-Usa el subtotal = 240.
+**Descripción:** Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal predefinido (240). El programa calculará tanto el monto del descuento como el total final a pagar, empleando una estructura modular de subrutinas y persistiendo los resultados en memoria.
 
 **Requisitos:**
 
-*   Calcular el descuento con la fórmula `(subtotal × 15) / 100`. Resultado en `AL`.
-*   Calcular el total restando el descuento al subtotal. Resultado en `AX`.
-*   Organizar la lógica en tres subrutinas:
-    *   `calc_descuento` — realiza la multiplicación y la división; deja el descuento en `AL`.
-    *   `calc_total` — resta el descuento al subtotal; deja el total en `AX`.
-    *   `guardar_resultados` — escribe el descuento en `[300H]` y el total en `[302H]`.
+- **Limpieza inicial:** Implementar una subrutina `clean` que ponga en cero los registros `AX`, `BX`, `CX` y `DX` antes de realizar cualquier operación.
+- **Subrutina de Descuento:**
+  - Crear la función `calc_descuento` que aplique la fórmula: `(subtotal × 15) / 100`.
+  - El resultado del descuento debe quedar en el registro `AL`.
+- **Subrutina de Total:**
+  - Crear la función `calc_total` que reste el monto del descuento al subtotal original.
+  - El resultado del total a pagar debe quedar en el registro `BX`.
+- **Subrutina de Almacenamiento:**
+  - Crear la función `guardar_resultados` que escriba los valores finales en memoria:
+    - Descuento en la dirección `[300H]`.
+    - Total final en la dirección `[302H]`.
+- **Flujo principal:** El `main` coordinará las llamadas en este orden: `clean`, carga del subtotal (240) en `AX`, `calc_descuento`, `calc_total` y `guardar_resultados`.
 
 ---
 
