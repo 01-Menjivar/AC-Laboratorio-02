@@ -1,0 +1,414 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Laboratorio 2: Operaciones Aritméticas en Ensamblador x86</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="laboratorio-02-arquitectura"
+                  title="Laboratorio 2: Operaciones Aritméticas en Ensamblador x86"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="Objetivos" duration="0">
+        <p>En este laboratorio exploraremos cómo el procesador maneja la aritmética a bajo nivel. Al terminarlo, habremos logrado:</p>
+<ul>
+<li>Comprender qué son los <em>flags</em> del procesador y cómo las operaciones aritméticas los afectan.</li>
+<li>Aplicar las instrucciones de suma (<code>ADD</code>, <code>ADC</code>), resta (<code>SUB</code>, <code>SBB</code>), multiplicación (<code>MUL</code>, <code>IMUL</code>) y división (<code>DIV</code>, <code>IDIV</code>) en sus variantes de 8 y 16 bits.</li>
+<li>Entender la diferencia entre operaciones con y sin signo, y cuándo usar cada variante.</li>
+<li>Estructurar nuestros programas mediante subrutinas (<code>CALL</code> / <code>RET</code>) para separar responsabilidades y reutilizar código.</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Parte I — Fundamentos Teóricos" duration="0">
+        <h2 is-upgraded>1. Las <em>flags</em> del procesador</h2>
+<p>Podemos pensar en las flags como señales que el procesador enciende o apaga automáticamente después de cada operación para comunicarnos información adicional.</p>
+<p>Cada vez que la ALU ejecuta una operación aritmética, no solo produce un resultado numérico, sino que también actualiza un registro especial llamado <strong>registro de flags</strong> (o registro de estado). Este registro nos describe características del resultado que acabamos de calcular.</p>
+<p class="image-container"><img alt="Registro de Flags" src="img/bad830c79e7ec7b4.png"></p>
+<p>Los cuatro flags más relevantes para nuestro trabajo en aritmética son:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Flag</p>
+</td><td colspan="1" rowspan="1"><p>Nombre completo</p>
+</td><td colspan="1" rowspan="1"><p>Activación</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>ZF</code></p>
+</td><td colspan="1" rowspan="1"><p><em>Zero Flag</em></p>
+</td><td colspan="1" rowspan="1"><p>El resultado de la operación es exactamente cero</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>SF</code></p>
+</td><td colspan="1" rowspan="1"><p><em>Sign Flag</em></p>
+</td><td colspan="1" rowspan="1"><p>El bit más significativo del resultado es 1, lo que indica un número negativo en representación con signo</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>OF</code></p>
+</td><td colspan="1" rowspan="1"><p><em>Overflow Flag</em></p>
+</td><td colspan="1" rowspan="1"><p>El resultado excede el rango representable con signo</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>CF</code></p>
+</td><td colspan="1" rowspan="1"><p><em>Carry Flag</em></p>
+</td><td colspan="1" rowspan="1"><p>Hubo un acarreo (en suma) o un préstamo (en resta) que no cabe en el registro destino</p>
+</td></tr>
+</table>
+<h2 is-upgraded>2. Suma — <code>ADD</code></h2>
+<p>La instrucción <code>ADD</code> suma dos operandos y guarda el resultado en el destino. Si el resultado no cabe en el registro destino, el exceso activa el <em>Carry Flag</em>.</p>
+<pre><code language="language-nasm" class="language-nasm">ADD destino, fuente   ; destino = destino + fuente
+</code></pre>
+<p><strong>Para 8 bits</strong> — el resultado queda en <code>AL</code>. En este ejemplo, sumaremos <strong>5</strong> y <strong>3</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, 5
+MOV BL, 3
+ADD AL, BL    ; resultado en AL
+</code></pre>
+<p><strong>Para 16 bits</strong> — el resultado queda en <code>AX</code>. En este ejemplo, sumaremos <strong>210</strong> y <strong>15</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AX, 210
+MOV BX, 15
+ADD AX, BX    ; resultado en AX
+</code></pre>
+<h3 is-upgraded>Conceptos clave: El Acarreo</h3>
+<p>(Para ejemplificarlo usaremos un registro de 8 bits pero el mismo concepto es aplicable a registros de 16 o 32 bits)</p>
+<p>Un registro de 8 bits puede guardar valores entre 0 y 255. Cuando una operación que realizamos produce un resultado fuera de ese rango, el procesador no puede mostrarlo completo. Para no perder esa información, activa el <strong>Carry Flag</strong> (<code>CF</code>).</p>
+<p><strong>Acarreo en la suma</strong> — cuando el resultado supera el límite superior.</p>
+<p>Imaginemos que sumamos 200 + 100. El resultado correcto es 300, pero 300 no cabe en 8 bits. Lo que ocurre es que el registro solo guarda los 8 bits más bajos del resultado, que corresponden a 44. El &#34;1&#34; sobrante se registra en el Carry Flag:</p>
+<pre><code>200 + 100 = 300  →  el registro guarda 44, y CF = 1
+</code></pre>
+<p>Pensémoslo así: 300 en binario son 9 bits. Un registro de 8 bits solo alcanza para los 8 últimos. El bit noveno (el que &#34;sobra&#34;) es exactamente el Carry Flag.</p>
+<h2 is-upgraded>3. Suma con acarreo — <code>ADC</code></h2>
+<p>Cuando los números que queremos sumar son más grandes que un solo registro, necesitamos operar en partes. La suma de las partes bajas puede generar un acarreo que debemos trasladar a la suma de las partes altas. <code>ADC</code> recoge ese acarreo automáticamente:</p>
+<pre><code language="language-nasm" class="language-nasm">ADC destino, fuente   ; destino = destino + fuente + CF
+</code></pre>
+<p>Es importante que limpiemos el <code>CF</code> con <code>CLC</code> antes de comenzar, para evitar que un acarreo residual de una operación anterior contamine nuestro resultado.</p>
+<p><strong>Para 8 bits</strong> — En este ejemplo, queremos realizar la suma de 100d + 200d sobre los registros <code>AH:AL</code>:</p>
+<pre><code language="language-nasm" class="language-nasm">; Pasar el número a hexadecimal
+; 100d -&gt; 0064h
+; 200d -&gt; 00C8h
+
+; Dividir en partes bajas y altas
+
+;Partes bajas
+MOV AL, 64h
+MOV BL, 0C8h
+
+;Partes altas
+MOV AH, 00h
+MOV BH, 00h
+
+;Sumar partes bajas
+ADD AL, BL
+
+;Sumar partes altas aprovechando la CF
+ADC AH, BH ;Resultado en AX (AH:AL)
+</code></pre>
+<p><strong>Suma de 16 bits usando registros de 8 bits</strong> — En este ejemplo, sumaremos dos números de 16 bits (<strong>12FFh + 0101h</strong>) operando sus partes por separado. Cuando las partes bajas sumen más de 255, el <code>ADC</code> pasará ese &#34;1&#34; extra a la parte alta:</p>
+<pre><code language="language-nasm" class="language-nasm">; Número 1: 12FFh (Alta: 12h, Baja: FFh)
+; Número 2: 0101h (Alta: 01h, Baja: 01h)
+
+; 1. Cargamos las partes bajas
+MOV AL, 0FFh
+MOV BL, 01h
+
+; 2. Cargamos las partes altas
+MOV AH, 12h
+MOV BH, 01h
+
+; 3. Sumamos las partes bajas con ADD
+ADD AL, BL        ; FFh + 01h = 00h. AL se queda en 0 y se activa el acarreo (CF = 1)
+
+; 4. Sumamos las partes altas con ADC
+ADC AH, BH        ; AH = 12h + 01h + CF(1) = 14h
+                  ; El resultado final queda en AX: 1400h
+</code></pre>
+<p>💡 Si usáramos <code>ADD</code> en el segundo paso en lugar de <code>ADC</code>, perderíamos el acarreo de la primera suma y nuestro resultado sería incorrecto.</p>
+<h2 is-upgraded>4. Resta — <code>SUB</code></h2>
+<p><code>SUB</code> resta la fuente del destino y guarda el resultado en el destino. Si el destino es menor que la fuente en aritmética sin signo, la operación necesita un préstamo que activa el <em>Carry Flag</em>.</p>
+<pre><code language="language-nasm" class="language-nasm">SUB destino, fuente   ; destino = destino - fuente
+</code></pre>
+<p><strong>Para 8 bits</strong> — el resultado queda en <code>AL</code>. En este ejemplo, restaremos <strong>5 - 3</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, 5
+MOV BL, 3
+SUB AL, BL    ; resultado en AL
+</code></pre>
+<p><strong>Para 16 bits</strong> — el resultado queda en <code>AX</code>. En este ejemplo, restaremos <strong>3200 - 1000</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AX, 3200d
+MOV BX, 1000d
+SUB AX, BX    ; resultado en AX
+</code></pre>
+<h3 is-upgraded>Conceptos clave: El Préstamo</h3>
+<p><strong>Préstamo en la resta</strong> — cuando el resultado cae por debajo del límite inferior.</p>
+<p>Ahora imaginemos restar 50 - 80. El resultado correcto es -30, pero en aritmética sin signo los negativos no existen. Lo que hace el procesador es interpretar ese &#34;retroceso&#34; como una vuelta circular: el registro llega a 0 y sigue contando hacia atrás desde 255, 254, 253... hasta posicionarse en 226. El Carry Flag se activa para indicarnos que se necesitó ese préstamo:</p>
+<pre><code>50 - 80 = -30  →  el registro guarda 226, y CF = 1
+</code></pre>
+<h2 is-upgraded>5. Resta con préstamo — <code>SBB</code></h2>
+<p>De manera simétrica a <code>ADC</code>, <code>SBB</code> extiende <code>SUB</code> para restar números que no caben en un solo registro. Incorpora el <em>Carry Flag</em> como bit de préstamo de la operación anterior:</p>
+<pre><code language="language-nasm" class="language-nasm">SBB destino, fuente   ; destino = destino - fuente - CF
+</code></pre>
+<p>Internamente, la resta con préstamo se realiza sumando el complemento a dos del sustraendo, por lo que <code>SBB</code> combina ese mecanismo con el préstamo del <code>CF</code>.</p>
+<p><strong>Para 8 bits</strong> — En este ejemplo, queremos realizar la resta de <strong>50d - 80d</strong> sobre los registros <code>AH:AL</code>:</p>
+<pre><code language="language-nasm" class="language-nasm">; Pasar los números a hexadecimal
+; 50d  -&gt; 0032h
+; 80d  -&gt; 0050h
+
+; Partes bajas
+MOV AL, 32h       ; 50d
+MOV BL, 50h       ; 80d
+
+; Partes altas
+MOV AH, 00h
+MOV BH, 00h
+
+; 1. Restamos las partes bajas con SUB
+SUB AL, BL        ; 50 - 80 = -30. AL se queda con E2h (226) y se activa el préstamo (CF = 1)
+
+; 2. Restamos las partes altas con SBB
+SBB AH, BH        ; AH = 00h - 00h - CF(1) = FFh
+                  ; El resultado final queda en AX: FFE2h (-30 en decimal)
+</code></pre>
+<h2 is-upgraded>6. Multiplicación sin signo — <code>MUL</code></h2>
+<p><code>MUL</code> trata ambos operandos como <strong>números sin signo</strong> y siempre usa un registro implícito como primer factor: <code>AL</code> para operandos de 8 bits, <code>AX</code> para operandos de 16 bits. El resultado ocupa el doble de espacio que los factores, porque el producto de dos números de N bits puede requerir hasta 2N bits.</p>
+<pre><code language="language-nasm" class="language-nasm">MUL fuente   ; multiplica fuente por AL o AX (según tamaño)
+</code></pre>
+<p><strong>Para 8 bits</strong> — el resultado queda en <code>AX</code>. En este ejemplo, multiplicaremos <strong>220 × 2</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, 220d
+MOV BL, 2d
+MUL BL        ; resultado en AX
+</code></pre>
+<p><strong>Para 16 bits</strong> — el resultado queda en <code>DX:AX</code>. En este ejemplo, multiplicaremos <strong>4200 × 44</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AX, 4200d
+MOV BX, 44d
+MOV DX, 0     ; limpiamos DX para evitar datos residuales en la parte alta
+MUL BX        ; resultado en DX:AX
+</code></pre>
+<p>💡 Es recomendable limpiar <code>DX</code> con <code>MOV DX, 0</code> antes de una multiplicación de 16 bits, para que la parte alta de nuestro resultado no contenga datos residuales.</p>
+<h2 is-upgraded>7. Multiplicación con signo — <code>IMUL</code></h2>
+<p><code>IMUL</code> (<em>Integer Multiply</em>) es la versión con signo de <code>MUL</code>. Interpreta los operandos como números en complemento a dos, lo que nos permite manejar valores negativos correctamente. Su sintaxis es idéntica a <code>MUL</code>:</p>
+<pre><code language="language-nasm" class="language-nasm">IMUL fuente   ; multiplica fuente por AL o AX, considerando el signo
+</code></pre>
+<p><strong>Para 8 bits</strong> — el resultado queda en <code>AX</code>. En este ejemplo, multiplicaremos <strong>-8 × 40</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, -8d
+MOV BL, 40d
+IMUL BL       ; resultado en AX
+</code></pre>
+<p><strong>Para 16 bits</strong> — el resultado queda en <code>DX:AX</code>. En este ejemplo, multiplicaremos <strong>-4200 × 44</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AX, -4200d
+MOV BX, 44d
+MOV DX, 0     ; limpiar DX si es necesario
+IMUL BX       ; resultado en DX:AX
+</code></pre>
+<p>⚠️ Usar <code>MUL</code> con valores negativos produce resultados incorrectos, porque <code>MUL</code> interpreta el patrón de bits como un número positivo grande. Si alguno de nuestros factores puede ser negativo, debemos usar siempre <code>IMUL</code>.</p>
+<h2 is-upgraded>8. División sin signo — <code>DIV</code></h2>
+<p>La división requiere que coloquemos el dividendo en el registro correcto antes de ejecutarla. Produce <strong>dos resultados</strong>: el cociente y el residuo, guardados en registros separados.</p>
+<pre><code language="language-nasm" class="language-nasm">DIV fuente   ; divide el dividendo implícito entre fuente
+</code></pre>
+<p><strong>Para 8 bits</strong> — el dividendo se coloca en <code>AX</code>. En este ejemplo, dividiremos <strong>254 / 2</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, 254d
+MOV BL, 2d
+DIV BL        ; AL = cociente, AH = residuo
+</code></pre>
+<p><strong>Para 16 bits</strong> — el dividendo se coloca en <code>AX</code>. En este ejemplo, dividiremos <strong>3200 / 282</strong>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AX, 3200d
+MOV BX, 282d
+DIV BX        ; AX = cociente, DX = residuo
+</code></pre>
+<p>⚠️ <strong>Dos errores que detienen nuestro programa:</strong></p>
+<ol type="1">
+<li><strong>División por cero</strong> — el procesador lanza una interrupción de error inmediatamente.</li>
+<li><strong>Cociente demasiado grande</strong> — si el cociente no cabe en <code>AL</code> (o <code>AX</code>), también se genera una interrupción.</li>
+</ol>
+<h2 is-upgraded>9. División con signo — <code>IDIV</code></h2>
+<p><code>IDIV</code> (<em>Integer Divide</em>) es la versión con signo de <code>DIV</code>. Interpreta los dividendos y divisores como números con signo, permitiendo obtener cocientes negativos.</p>
+<p><strong>Para 8 bits</strong> — En este ejemplo, dividiremos <strong>254 / -2</strong>. El dividendo debe estar preparado en <code>AX</code>:</p>
+<pre><code language="language-nasm" class="language-nasm">MOV AL, 254d
+CBW           ; extiende el signo de AL hacia AH (para tener el dividendo correcto en AX)
+MOV BL, -2d
+IDIV BL       ; AL = cociente, AH = residuo
+</code></pre>
+<p>⚠️ Usar <code>DIV</code> con dividendos o divisores negativos produce resultados incorrectos. Si alguno de nuestros operandos puede ser negativo, debemos usar siempre <code>CBW</code> + <code>IDIV</code>.</p>
+<h2 is-upgraded>10. Estructurar nuestro código con subrutinas: <code>CALL</code> y <code>RET</code></h2>
+<p>Conforme nuestros programas crecen, conviene separar las operaciones en bloques reutilizables llamados <strong>subrutinas</strong>. En ensamblador lo logramos con el par <code>CALL</code> / <code>RET</code>:</p>
+<ul>
+<li><strong><code>CALL nombre</code></strong> — salta a la subrutina y guarda automáticamente en la pila la dirección de la instrucción siguiente (la <em>dirección de retorno</em>).</li>
+<li><strong><code>RET</code></strong> — extrae esa dirección de la pila y regresa exactamente al punto donde ejecutamos el <code>CALL</code>.</li>
+</ul>
+<pre><code language="language-nasm" class="language-nasm">    CALL mi_subrutina      ; salta y guarda la dirección de retorno
+    ; la ejecución continúa aquí cuando RET se ejecute
+
+mi_subrutina:
+    ; operaciones
+    RET                    ; regresa al CALL
+</code></pre>
+<p><code>CALL</code> y <code>RET</code> siempre van en pareja. Un <code>RET</code> sin su <code>CALL</code> correspondiente extraerá un valor incorrecto de la pila y nuestro programa fallará.</p>
+<h2 is-upgraded>Práctica Guiada — Cálculo de promedio entero</h2>
+<p><strong>Descripción:</strong> Desarrollaremos un programa que calcule el promedio entero de tres números (<strong>8</strong>, <strong>15</strong> y <strong>9</strong>). Utilizaremos una estructura modular basada en subrutinas para limpiar el estado del procesador, realizar la suma acumulada y obtener el promedio final.</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li><strong>Limpieza de registros:</strong> Implementar una subrutina <code>clean</code> que ponga en cero los registros de propósito general (<code>AX</code>, <code>BX</code>, <code>CX</code>, <code>DX</code>) antes de iniciar.</li>
+<li><strong>Definición de valores:</strong> Cargar los números 8, 15 y 9 en los registros <code>BL</code>, <code>CL</code> y <code>DL</code> respectivamente.</li>
+<li><strong>Subrutina de suma:</strong> Implementar una subrutina <code>suma</code> que acumule la suma de los tres registros en el acumulador <code>AL</code>.</li>
+<li><strong>Subrutina de promedio:</strong> Implementar una subrutina <code>promedio</code> que realice la división del total acumulado entre 3 (usando el registro <code>BH</code> como divisor). El cociente final debe quedar en <code>AL</code>.</li>
+<li><strong>Flujo principal:</strong> El <code>main</code> debe coordinar las llamadas en el orden: <code>clean</code>, carga de datos, <code>suma</code> y <code>promedio</code>. Finalizar con <code>INT 20H</code>.</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Parte III — Ejercicios de Aplicación" duration="0">
+        <p>Hemos llegado al final de nuestra guía teórica y ahora es el momento de que pongamos a prueba lo aprendido con algunos retos prácticos.</p>
+<h2 is-upgraded>Ejercicio 1 — Área y perímetro de un rectángulo</h2>
+<p><strong>Descripción:</strong> Dado el ancho y el alto de un rectángulo cargados en <code>BL</code> y <code>CL</code> respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li>Calcular el área (<code>ancho × alto</code>) con <code>MUL</code> dentro de una subrutina <code>calc_area</code>. Resultado en <code>AX</code>.</li>
+<li>Calcular el perímetro (<code>2 × (ancho + alto)</code>) con <code>ADD</code> y <code>MUL</code> dentro de una subrutina <code>calc_perimetro</code>. Resultado en <code>AX</code>.</li>
+<li>El <code>main</code> llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria: <ul>
+<li>Área en <code>[200H]</code></li>
+<li>Perímetro en <code>[202H]</code></li>
+</ul>
+</li>
+</ul>
+<h2 is-upgraded>Ejercicio 2 — Factura con descuento</h2>
+<p><strong>Descripción:</strong> Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en <code>AX</code>. Nuestro programa calculará el descuento y el total a pagar.</p>
+<p>Usa el subtotal = 240.</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li>Calcular el descuento con la fórmula <code>(subtotal × 15) / 100</code>. Resultado en <code>AL</code>.</li>
+<li>Calcular el total restando el descuento al subtotal. Resultado en <code>AX</code>.</li>
+<li>Organizar la lógica en tres subrutinas: <ul>
+<li><code>calc_descuento</code> — realiza la multiplicación y la división; deja el descuento en <code>AL</code>.</li>
+<li><code>calc_total</code> — resta el descuento al subtotal; deja el total en <code>AX</code>.</li>
+<li><code>guardar_resultados</code> — escribe el descuento en <code>[300H]</code> y el total en <code>[302H]</code>.</li>
+</ul>
+</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Tabla de referencia rápida" duration="0">
+        <h2 is-upgraded>Suma y resta</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Instrucción</p>
+</td><td colspan="1" rowspan="1"><p>Operación</p>
+</td><td colspan="1" rowspan="1"><p>Resultado</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>ADD destino, fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino + fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>ADC destino, fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino + fuente + CF</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>SUB destino, fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino - fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>SBB destino, fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino - fuente - CF</code></p>
+</td><td colspan="1" rowspan="1"><p><code>destino</code></p>
+</td></tr>
+</table>
+<h2 is-upgraded>Multiplicación</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Instrucción</p>
+</td><td colspan="1" rowspan="1"><p>Tamaño Operando</p>
+</td><td colspan="1" rowspan="1"><p>Operación (Factor fijo × Fuente)</p>
+</td><td colspan="1" rowspan="1"><p>Resultado</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>MUL / IMUL fuente</code></p>
+</td><td colspan="1" rowspan="1"><p>8 bits</p>
+</td><td colspan="1" rowspan="1"><p><code>AL × fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>AX</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>16 bits</p>
+</td><td colspan="1" rowspan="1"><p><code>AX × fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>DX:AX</code></p>
+</td></tr>
+</table>
+<h2 is-upgraded>División</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Instrucción</p>
+</td><td colspan="1" rowspan="1"><p>Tamaño Operando</p>
+</td><td colspan="1" rowspan="1"><p>Operación (Dividendo ÷ Fuente)</p>
+</td><td colspan="1" rowspan="1"><p>Cociente</p>
+</td><td colspan="1" rowspan="1"><p>Residuo</p>
+</td><td colspan="1" rowspan="1"><p>Preparación requerida</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>DIV / IDIV fuente</code></p>
+</td><td colspan="1" rowspan="1"><p>8 bits</p>
+</td><td colspan="1" rowspan="1"><p><code>AX ÷ fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>AL</code></p>
+</td><td colspan="1" rowspan="1"><p><code>AH</code></p>
+</td><td colspan="1" rowspan="1"><p><code>AH=0</code> (sin signo) o <code>CBW</code> (con signo)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>DIV fuente</code></p>
+</td><td colspan="1" rowspan="1"><p>16 bits</p>
+</td><td colspan="1" rowspan="1"><p><code>DX:AX ÷ fuente</code></p>
+</td><td colspan="1" rowspan="1"><p><code>AX</code></p>
+</td><td colspan="1" rowspan="1"><p><code>DX</code></p>
+</td><td colspan="1" rowspan="1"><p>Limpiar <code>DX</code> (<code>MOV DX, 0</code>)</p>
+</td></tr>
+</table>
+<h2 is-upgraded>Utilidades y control de flujo</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Instrucción</p>
+</td><td colspan="1" rowspan="1"><p>Descripción</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>CLC</code></p>
+</td><td colspan="1" rowspan="1"><p>Pone <code>CF = 0</code>; usar antes de operaciones <code>ADC</code> / <code>SBB</code> encadenadas</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>CBW</code></p>
+</td><td colspan="1" rowspan="1"><p>Extiende el signo de <code>AL</code> hacia <code>AH</code>; necesario antes de <code>IDIV</code> de 8 bits</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>CALL nombre</code></p>
+</td><td colspan="1" rowspan="1"><p>Salta a la subrutina y guarda la dirección de retorno en la pila</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>RET</code></p>
+</td><td colspan="1" rowspan="1"><p>Extrae la dirección de retorno de la pila y regresa al punto del <code>CALL</code></p>
+</td></tr>
+</table>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Indicaciones de entrega" duration="0">
+        <p>Los ejercicios realizados en este laboratorio deben entregarse a través de la plataforma <strong>Moodle</strong>. Por favor, asegúrate de cumplir con los siguientes requisitos:</p>
+<ol type="1">
+<li>Ubicar el entregable bajo el nombre <strong>&#34;Labo 2 (Sección x)&#34;</strong>.</li>
+<li>Subir cada archivo de código fuente en su respectiva sección.</li>
+<li>El formato de nombre de los archivos debe ser estrictamente el siguiente: <ul>
+<li><strong>Ejercicio 1: </strong><code>uno[NombreApellido].asm</code> (Ejemplo: <code>unoOscarMenjivar.asm</code>)</li>
+<li><strong>Ejercicio 2: </strong><code>dos[NombreApellido].asm</code> (Ejemplo: <code>dosOscarMenjivar.asm</code>)</li>
+</ul>
+</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

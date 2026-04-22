@@ -1,0 +1,22 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-04-22T11:14:54-06:00",
+  "id": "laboratorio-02-arquitectura",
+  "duration": 0,
+  "title": "Laboratorio 2: Operaciones Aritméticas en Ensamblador x86",
+  "authors": "Oscar Menjivar",
+  "summary": "Laboratorio 02 - Operaciones Aritméticas en Ensamblador x86",
+  "source": "labo2.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "ensamblador"
+  ],
+  "tags": [],
+  "url": "laboratorio-02-arquitectura"
+}
