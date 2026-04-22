@@ -40,9 +40,8 @@
 
       </google-codelab-step>
     
-      <google-codelab-step label="Parte I — Fundamentos Teóricos" duration="0">
-        <h2 is-upgraded>1. Las <em>flags</em> del procesador</h2>
-<p>Podemos pensar en las flags como señales que el procesador enciende o apaga automáticamente después de cada operación para comunicarnos información adicional.</p>
+      <google-codelab-step label="Las flags del procesador" duration="0">
+        <p>Podemos pensar en las flags como señales que el procesador enciende o apaga automáticamente después de cada operación para comunicarnos información adicional.</p>
 <p>Cada vez que la ALU ejecuta una operación aritmética, no solo produce un resultado numérico, sino que también actualiza un registro especial llamado <strong>registro de flags</strong> (o registro de estado). Este registro nos describe características del resultado que acabamos de calcular.</p>
 <p class="image-container"><img alt="Registro de Flags" src="img/bad830c79e7ec7b4.png"></p>
 <p>Los cuatro flags más relevantes para nuestro trabajo en aritmética son:</p>
@@ -68,7 +67,12 @@
 </td><td colspan="1" rowspan="1"><p>Hubo un acarreo (en suma) o un préstamo (en resta) que no cabe en el registro destino</p>
 </td></tr>
 </table>
-<h2 is-upgraded>2. Suma — <code>ADD</code></h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Operaciones de Suma (ADD y ADC)" duration="0">
+        <h2 is-upgraded>Suma simple — <code>ADD</code></h2>
 <p>La instrucción <code>ADD</code> suma dos operandos y guarda el resultado en el destino. Si el resultado no cabe en el registro destino, el exceso activa el <em>Carry Flag</em>.</p>
 <pre><code language="language-nasm" class="language-nasm">ADD destino, fuente   ; destino = destino + fuente
 </code></pre>
@@ -82,7 +86,7 @@ ADD AL, BL    ; resultado en AL
 MOV BX, 15
 ADD AX, BX    ; resultado en AX
 </code></pre>
-<h3 is-upgraded>Conceptos clave: El Acarreo</h3>
+<h2 is-upgraded>Conceptos clave: El Acarreo</h2>
 <p>(Para ejemplificarlo usaremos un registro de 8 bits pero el mismo concepto es aplicable a registros de 16 o 32 bits)</p>
 <p>Un registro de 8 bits puede guardar valores entre 0 y 255. Cuando una operación que realizamos produce un resultado fuera de ese rango, el procesador no puede mostrarlo completo. Para no perder esa información, activa el <strong>Carry Flag</strong> (<code>CF</code>).</p>
 <p><strong>Acarreo en la suma</strong> — cuando el resultado supera el límite superior.</p>
@@ -90,7 +94,7 @@ ADD AX, BX    ; resultado en AX
 <pre><code>200 + 100 = 300  →  el registro guarda 44, y CF = 1
 </code></pre>
 <p>Pensémoslo así: 300 en binario son 9 bits. Un registro de 8 bits solo alcanza para los 8 últimos. El bit noveno (el que &#34;sobra&#34;) es exactamente el Carry Flag.</p>
-<h2 is-upgraded>3. Suma con acarreo — <code>ADC</code></h2>
+<h2 is-upgraded>Suma con acarreo — <code>ADC</code></h2>
 <p>Cuando los números que queremos sumar son más grandes que un solo registro, necesitamos operar en partes. La suma de las partes bajas puede generar un acarreo que debemos trasladar a la suma de las partes altas. <code>ADC</code> recoge ese acarreo automáticamente:</p>
 <pre><code language="language-nasm" class="language-nasm">ADC destino, fuente   ; destino = destino + fuente + CF
 </code></pre>
@@ -102,18 +106,18 @@ ADD AX, BX    ; resultado en AX
 
 ; Dividir en partes bajas y altas
 
-;Partes bajas
+; Partes bajas
 MOV AL, 64h
 MOV BL, 0C8h
 
-;Partes altas
+; Partes altas
 MOV AH, 00h
 MOV BH, 00h
 
-;Sumar partes bajas
+; Sumar partes bajas
 ADD AL, BL
 
-;Sumar partes altas aprovechando la CF
+; Sumar partes altas aprovechando la CF
 ADC AH, BH ;Resultado en AX (AH:AL)
 </code></pre>
 <p><strong>Suma de 16 bits usando registros de 8 bits</strong> — En este ejemplo, sumaremos dos números de 16 bits (<strong>12FFh + 0101h</strong>) operando sus partes por separado. Cuando las partes bajas sumen más de 255, el <code>ADC</code> pasará ese &#34;1&#34; extra a la parte alta:</p>
@@ -136,7 +140,12 @@ ADC AH, BH        ; AH = 12h + 01h + CF(1) = 14h
                   ; El resultado final queda en AX: 1400h
 </code></pre>
 <p>💡 Si usáramos <code>ADD</code> en el segundo paso en lugar de <code>ADC</code>, perderíamos el acarreo de la primera suma y nuestro resultado sería incorrecto.</p>
-<h2 is-upgraded>4. Resta — <code>SUB</code></h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Operaciones de Resta (SUB y SBB)" duration="0">
+        <h2 is-upgraded>Resta simple — <code>SUB</code></h2>
 <p><code>SUB</code> resta la fuente del destino y guarda el resultado en el destino. Si el destino es menor que la fuente en aritmética sin signo, la operación necesita un préstamo que activa el <em>Carry Flag</em>.</p>
 <pre><code language="language-nasm" class="language-nasm">SUB destino, fuente   ; destino = destino - fuente
 </code></pre>
@@ -150,12 +159,12 @@ SUB AL, BL    ; resultado en AL
 MOV BX, 1000d
 SUB AX, BX    ; resultado en AX
 </code></pre>
-<h3 is-upgraded>Conceptos clave: El Préstamo</h3>
+<h2 is-upgraded>Conceptos clave: El Préstamo</h2>
 <p><strong>Préstamo en la resta</strong> — cuando el resultado cae por debajo del límite inferior.</p>
 <p>Ahora imaginemos restar 50 - 80. El resultado correcto es -30, pero en aritmética sin signo los negativos no existen. Lo que hace el procesador es interpretar ese &#34;retroceso&#34; como una vuelta circular: el registro llega a 0 y sigue contando hacia atrás desde 255, 254, 253... hasta posicionarse en 226. El Carry Flag se activa para indicarnos que se necesitó ese préstamo:</p>
 <pre><code>50 - 80 = -30  →  el registro guarda 226, y CF = 1
 </code></pre>
-<h2 is-upgraded>5. Resta con préstamo — <code>SBB</code></h2>
+<h2 is-upgraded>Resta con préstamo — <code>SBB</code></h2>
 <p>De manera simétrica a <code>ADC</code>, <code>SBB</code> extiende <code>SUB</code> para restar números que no caben en un solo registro. Incorpora el <em>Carry Flag</em> como bit de préstamo de la operación anterior:</p>
 <pre><code language="language-nasm" class="language-nasm">SBB destino, fuente   ; destino = destino - fuente - CF
 </code></pre>
@@ -180,7 +189,12 @@ SUB AL, BL        ; 50 - 80 = -30. AL se queda con E2h (226) y se activa el pré
 SBB AH, BH        ; AH = 00h - 00h - CF(1) = FFh
                   ; El resultado final queda en AX: FFE2h (-30 en decimal)
 </code></pre>
-<h2 is-upgraded>6. Multiplicación sin signo — <code>MUL</code></h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Multiplicación (MUL e IMUL)" duration="0">
+        <h2 is-upgraded>Multiplicación sin signo — <code>MUL</code></h2>
 <p><code>MUL</code> trata ambos operandos como <strong>números sin signo</strong> y siempre usa un registro implícito como primer factor: <code>AL</code> para operandos de 8 bits, <code>AX</code> para operandos de 16 bits. El resultado ocupa el doble de espacio que los factores, porque el producto de dos números de N bits puede requerir hasta 2N bits.</p>
 <pre><code language="language-nasm" class="language-nasm">MUL fuente   ; multiplica fuente por AL o AX (según tamaño)
 </code></pre>
@@ -196,7 +210,7 @@ MOV DX, 0     ; limpiamos DX para evitar datos residuales en la parte alta
 MUL BX        ; resultado en DX:AX
 </code></pre>
 <p>💡 Es recomendable limpiar <code>DX</code> con <code>MOV DX, 0</code> antes de una multiplicación de 16 bits, para que la parte alta de nuestro resultado no contenga datos residuales.</p>
-<h2 is-upgraded>7. Multiplicación con signo — <code>IMUL</code></h2>
+<h2 is-upgraded>Multiplicación con signo — <code>IMUL</code></h2>
 <p><code>IMUL</code> (<em>Integer Multiply</em>) es la versión con signo de <code>MUL</code>. Interpreta los operandos como números en complemento a dos, lo que nos permite manejar valores negativos correctamente. Su sintaxis es idéntica a <code>MUL</code>:</p>
 <pre><code language="language-nasm" class="language-nasm">IMUL fuente   ; multiplica fuente por AL o AX, considerando el signo
 </code></pre>
@@ -212,7 +226,12 @@ MOV DX, 0     ; limpiar DX si es necesario
 IMUL BX       ; resultado en DX:AX
 </code></pre>
 <p>⚠️ Usar <code>MUL</code> con valores negativos produce resultados incorrectos, porque <code>MUL</code> interpreta el patrón de bits como un número positivo grande. Si alguno de nuestros factores puede ser negativo, debemos usar siempre <code>IMUL</code>.</p>
-<h2 is-upgraded>8. División sin signo — <code>DIV</code></h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="División (DIV e IDIV)" duration="0">
+        <h2 is-upgraded>División sin signo — <code>DIV</code></h2>
 <p>La división requiere que coloquemos el dividendo en el registro correcto antes de ejecutarla. Produce <strong>dos resultados</strong>: el cociente y el residuo, guardados en registros separados.</p>
 <pre><code language="language-nasm" class="language-nasm">DIV fuente   ; divide el dividendo implícito entre fuente
 </code></pre>
@@ -221,17 +240,18 @@ IMUL BX       ; resultado en DX:AX
 MOV BL, 2d
 DIV BL        ; AL = cociente, AH = residuo
 </code></pre>
-<p><strong>Para 16 bits</strong> — el dividendo se coloca en <code>AX</code>. En este ejemplo, dividiremos <strong>3200 / 282</strong>:</p>
+<p><strong>Para 16 bits</strong> — el dividendo se coloca en <code>DX:AX</code>. En este ejemplo, dividiremos <strong>3200 / 282</strong>:</p>
 <pre><code language="language-nasm" class="language-nasm">MOV AX, 3200d
 MOV BX, 282d
+MOV DX, 0     ; Limpiar DX para asegurar que el dividendo es solo AX
 DIV BX        ; AX = cociente, DX = residuo
 </code></pre>
 <p>⚠️ <strong>Dos errores que detienen nuestro programa:</strong></p>
 <ol type="1">
 <li><strong>División por cero</strong> — el procesador lanza una interrupción de error inmediatamente.</li>
-<li><strong>Cociente demasiado grande</strong> — si el cociente no cabe en <code>AL</code> (o <code>AX</code>), también se genera una interrupción.</li>
+<li><strong>Cociente demasiado grande</strong> — si el cociente no cabe en el registro destino (AL para 8 bits, AX para 16 bits), también se genera una interrupción.</li>
 </ol>
-<h2 is-upgraded>9. División con signo — <code>IDIV</code></h2>
+<h2 is-upgraded>División con signo — <code>IDIV</code></h2>
 <p><code>IDIV</code> (<em>Integer Divide</em>) es la versión con signo de <code>DIV</code>. Interpreta los dividendos y divisores como números con signo, permitiendo obtener cocientes negativos.</p>
 <p><strong>Para 8 bits</strong> — En este ejemplo, dividiremos <strong>254 / -2</strong>. El dividendo debe estar preparado en <code>AX</code>:</p>
 <pre><code language="language-nasm" class="language-nasm">MOV AL, 254d
@@ -240,7 +260,12 @@ MOV BL, -2d
 IDIV BL       ; AL = cociente, AH = residuo
 </code></pre>
 <p>⚠️ Usar <code>DIV</code> con dividendos o divisores negativos produce resultados incorrectos. Si alguno de nuestros operandos puede ser negativo, debemos usar siempre <code>CBW</code> + <code>IDIV</code>.</p>
-<h2 is-upgraded>10. Estructurar nuestro código con subrutinas: <code>CALL</code> y <code>RET</code></h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Subrutinas (CALL y RET)" duration="0">
+        <h2 is-upgraded>Estructurar nuestro código con subrutinas</h2>
 <p>Conforme nuestros programas crecen, conviene separar las operaciones en bloques reutilizables llamados <strong>subrutinas</strong>. En ensamblador lo logramos con el par <code>CALL</code> / <code>RET</code>:</p>
 <ul>
 <li><strong><code>CALL nombre</code></strong> — salta a la subrutina y guarda automáticamente en la pila la dirección de la instrucción siguiente (la <em>dirección de retorno</em>).</li>
@@ -254,7 +279,12 @@ mi_subrutina:
     RET                    ; regresa al CALL
 </code></pre>
 <p><code>CALL</code> y <code>RET</code> siempre van en pareja. Un <code>RET</code> sin su <code>CALL</code> correspondiente extraerá un valor incorrecto de la pila y nuestro programa fallará.</p>
-<h2 is-upgraded>Práctica Guiada — Cálculo de promedio entero</h2>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Práctica Guiada" duration="0">
+        <h2 is-upgraded>Cálculo de promedio entero</h2>
 <p><strong>Descripción:</strong> Desarrollaremos un programa que calcule el promedio entero de tres números (<strong>8</strong>, <strong>15</strong> y <strong>9</strong>). Utilizaremos una estructura modular basada en subrutinas para limpiar el estado del procesador, realizar la suma acumulada y obtener el promedio final.</p>
 <p><strong>Requisitos:</strong></p>
 <ul>
@@ -263,38 +293,6 @@ mi_subrutina:
 <li><strong>Subrutina de suma:</strong> Implementar una subrutina <code>suma</code> que acumule la suma de los tres registros en el acumulador <code>AL</code>.</li>
 <li><strong>Subrutina de promedio:</strong> Implementar una subrutina <code>promedio</code> que realice la división del total acumulado entre 3 (usando el registro <code>BH</code> como divisor). El cociente final debe quedar en <code>AL</code>.</li>
 <li><strong>Flujo principal:</strong> El <code>main</code> debe coordinar las llamadas en el orden: <code>clean</code>, carga de datos, <code>suma</code> y <code>promedio</code>. Finalizar con <code>INT 20H</code>.</li>
-</ul>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Parte III — Ejercicios de Aplicación" duration="0">
-        <p>Hemos llegado al final de nuestra guía teórica y ahora es el momento de que pongamos a prueba lo aprendido con algunos retos prácticos.</p>
-<h2 is-upgraded>Ejercicio 1 — Área y perímetro de un rectángulo</h2>
-<p><strong>Descripción:</strong> Dado el ancho y el alto de un rectángulo cargados en <code>BL</code> y <code>CL</code> respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.</p>
-<p><strong>Requisitos:</strong></p>
-<ul>
-<li>Calcular el área (<code>ancho × alto</code>) con <code>MUL</code> dentro de una subrutina <code>calc_area</code>. Resultado en <code>AX</code>.</li>
-<li>Calcular el perímetro (<code>2 × (ancho + alto)</code>) con <code>ADD</code> y <code>MUL</code> dentro de una subrutina <code>calc_perimetro</code>. Resultado en <code>AX</code>.</li>
-<li>El <code>main</code> llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria: <ul>
-<li>Área en <code>[200H]</code></li>
-<li>Perímetro en <code>[202H]</code></li>
-</ul>
-</li>
-</ul>
-<h2 is-upgraded>Ejercicio 2 — Factura con descuento</h2>
-<p><strong>Descripción:</strong> Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en <code>AX</code>. Nuestro programa calculará el descuento y el total a pagar.</p>
-<p>Usa el subtotal = 240.</p>
-<p><strong>Requisitos:</strong></p>
-<ul>
-<li>Calcular el descuento con la fórmula <code>(subtotal × 15) / 100</code>. Resultado en <code>AL</code>.</li>
-<li>Calcular el total restando el descuento al subtotal. Resultado en <code>AX</code>.</li>
-<li>Organizar la lógica en tres subrutinas: <ul>
-<li><code>calc_descuento</code> — realiza la multiplicación y la división; deja el descuento en <code>AL</code>.</li>
-<li><code>calc_total</code> — resta el descuento al subtotal; deja el total en <code>AX</code>.</li>
-<li><code>guardar_resultados</code> — escribe el descuento en <code>[300H]</code> y el total en <code>[302H]</code>.</li>
-</ul>
-</li>
 </ul>
 
 
@@ -387,8 +385,35 @@ mi_subrutina:
 
       </google-codelab-step>
     
-      <google-codelab-step label="Indicaciones de entrega" duration="0">
-        <p>Los ejercicios realizados en este laboratorio deben entregarse a través de la plataforma <strong>Moodle</strong>. Por favor, asegúrate de cumplir con los siguientes requisitos:</p>
+      <google-codelab-step label="Ejercicios e Indicaciones de entrega" duration="0">
+        <h2 is-upgraded>Ejercicio 1 — Área y perímetro de un rectángulo</h2>
+<p><strong>Descripción:</strong> Dado el ancho y el alto de un rectángulo cargados en <code>BL</code> y <code>CL</code> respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li>Calcular el área (<code>ancho × alto</code>) con <code>MUL</code> dentro de una subrutina <code>calc_area</code>. Resultado en <code>AX</code>.</li>
+<li>Calcular el perímetro (<code>2 × (ancho + alto)</code>) con <code>ADD</code> y <code>MUL</code> dentro de una subrutina <code>calc_perimetro</code>. Resultado en <code>AX</code>.</li>
+<li>El <code>main</code> llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria: <ul>
+<li>Área en <code>[200H]</code></li>
+<li>Perímetro en <code>[202H]</code></li>
+</ul>
+</li>
+</ul>
+<h2 is-upgraded>Ejercicio 2 — Factura con descuento</h2>
+<p><strong>Descripción:</strong> Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en <code>AX</code>. Nuestro programa calculará el descuento y el total a pagar.</p>
+<p>Usa el subtotal = 240.</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li>Calcular el descuento con la fórmula <code>(subtotal × 15) / 100</code>. Resultado en <code>AL</code>.</li>
+<li>Calcular el total restando el descuento al subtotal. Resultado en <code>AX</code>.</li>
+<li>Organizar la lógica en tres subrutinas: <ul>
+<li><code>calc_descuento</code> — realiza la multiplicación y la división; deja el descuento en <code>AL</code>.</li>
+<li><code>calc_total</code> — resta el descuento al subtotal; deja el total en <code>AX</code>.</li>
+<li><code>guardar_resultados</code> — escribe el descuento en <code>[300H]</code> y el total en <code>[302H]</code>.</li>
+</ul>
+</li>
+</ul>
+<h2 is-upgraded>Indicaciones de entrega</h2>
+<p>Los ejercicios realizados en este laboratorio deben entregarse a través de la plataforma <strong>Moodle</strong>. Por favor, asegúrate de cumplir con los siguientes requisitos:</p>
 <ol type="1">
 <li>Ubicar el entregable bajo el nombre <strong>&#34;Labo 2 (Sección x)&#34;</strong>.</li>
 <li>Subir cada archivo de código fuente en su respectiva sección.</li>
