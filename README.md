@@ -13,16 +13,14 @@ authors: Oscar Menjivar
 
 En este laboratorio exploraremos cómo el procesador maneja la aritmética a bajo nivel. Al terminarlo, habremos logrado:
 
-- Comprender qué son los _flags_ del procesador y cómo las operaciones aritméticas los afectan.
-- Aplicar las instrucciones de suma (`ADD`, `ADC`), resta (`SUB`, `SBB`), multiplicación (`MUL`, `IMUL`) y división (`DIV`, `IDIV`) en sus variantes de 8 y 16 bits.
-- Entender la diferencia entre operaciones con y sin signo, y cuándo usar cada variante.
-- Estructurar nuestros programas mediante subrutinas (`CALL` / `RET`) para separar responsabilidades y reutilizar código.
+*   Comprender qué son los _flags_ del procesador y cómo las operaciones aritméticas los afectan.
+*   Aplicar las instrucciones de suma (`ADD`, `ADC`), resta (`SUB`, `SBB`), multiplicación (`MUL`, `IMUL`) y división (`DIV`, `IDIV`) en sus variantes de 8 y 16 bits.
+*   Entender la diferencia entre operaciones con y sin signo, y cuándo usar cada variante.
+*   Estructurar nuestros programas mediante subrutinas (`CALL` / `RET`) para separar responsabilidades y reutilizar código.
 
 ---
 
-## Parte I — Fundamentos Teóricos
-
-### 1. Las _flags_ del procesador
+## Las flags del procesador
 
 Podemos pensar en las flags como señales que el procesador enciende o apaga automáticamente después de cada operación para comunicarnos información adicional.
 
@@ -39,10 +37,11 @@ Los cuatro flags más relevantes para nuestro trabajo en aritmética son:
 | `OF` | _Overflow Flag_ | El resultado excede el rango representable con signo                                                      |
 | `CF` | _Carry Flag_    | Hubo un acarreo (en suma) o un préstamo (en resta) que no cabe en el registro destino                     |
 
-
 ---
 
-### 2. Suma — `ADD`
+## Operaciones de Suma (ADD y ADC)
+
+### Suma simple — `ADD`
 
 La instrucción `ADD` suma dos operandos y guarda el resultado en el destino. Si el resultado no cabe en el registro destino, el exceso activa el _Carry Flag_.
 
@@ -66,8 +65,7 @@ MOV BX, 15
 ADD AX, BX    ; resultado en AX
 ```
 
-
-#### Conceptos clave: El Acarreo
+### Conceptos clave: El Acarreo
 
 (Para ejemplificarlo usaremos un registro de 8 bits pero el mismo concepto es aplicable a registros de 16 o 32 bits)
 
@@ -83,9 +81,7 @@ Imaginemos que sumamos 200 + 100. El resultado correcto es 300, pero 300 no cabe
 
 Pensémoslo así: 300 en binario son 9 bits. Un registro de 8 bits solo alcanza para los 8 últimos. El bit noveno (el que "sobra") es exactamente el Carry Flag.
 
----
-
-### 3. Suma con acarreo — `ADC`
+### Suma con acarreo — `ADC`
 
 Cuando los números que queremos sumar son más grandes que un solo registro, necesitamos operar en partes. La suma de las partes bajas puede generar un acarreo que debemos trasladar a la suma de las partes altas. `ADC` recoge ese acarreo automáticamente:
 
@@ -104,18 +100,18 @@ Es importante que limpiemos el `CF` con `CLC` antes de comenzar, para evitar que
 
 ; Dividir en partes bajas y altas
 
-;Partes bajas
+; Partes bajas
 MOV AL, 64h
 MOV BL, 0C8h
 
-;Partes altas
+; Partes altas
 MOV AH, 00h
 MOV BH, 00h
 
-;Sumar partes bajas
+; Sumar partes bajas
 ADD AL, BL
 
-;Sumar partes altas aprovechando la CF
+; Sumar partes altas aprovechando la CF
 ADC AH, BH ;Resultado en AX (AH:AL)
 ```
 
@@ -145,7 +141,9 @@ ADC AH, BH        ; AH = 12h + 01h + CF(1) = 14h
 
 ---
 
-### 4. Resta — `SUB`
+## Operaciones de Resta (SUB y SBB)
+
+### Resta simple — `SUB`
 
 `SUB` resta la fuente del destino y guarda el resultado en el destino. Si el destino es menor que la fuente en aritmética sin signo, la operación necesita un préstamo que activa el _Carry Flag_.
 
@@ -169,8 +167,7 @@ MOV BX, 1000d
 SUB AX, BX    ; resultado en AX
 ```
 
-
-#### Conceptos clave: El Préstamo
+### Conceptos clave: El Préstamo
 
 **Préstamo en la resta** — cuando el resultado cae por debajo del límite inferior.
 
@@ -180,9 +177,7 @@ Ahora imaginemos restar 50 - 80. El resultado correcto es -30, pero en aritméti
 50 - 80 = -30  →  el registro guarda 226, y CF = 1
 ```
 
----
-
-### 5. Resta con préstamo — `SBB`
+### Resta con préstamo — `SBB`
 
 De manera simétrica a `ADC`, `SBB` extiende `SUB` para restar números que no caben en un solo registro. Incorpora el _Carry Flag_ como bit de préstamo de la operación anterior:
 
@@ -217,7 +212,9 @@ SBB AH, BH        ; AH = 00h - 00h - CF(1) = FFh
 
 ---
 
-### 6. Multiplicación sin signo — `MUL`
+## Multiplicación (MUL e IMUL)
+
+### Multiplicación sin signo — `MUL`
 
 `MUL` trata ambos operandos como **números sin signo** y siempre usa un registro implícito como primer factor: `AL` para operandos de 8 bits, `AX` para operandos de 16 bits. El resultado ocupa el doble de espacio que los factores, porque el producto de dos números de N bits puede requerir hasta 2N bits.
 
@@ -244,9 +241,7 @@ MUL BX        ; resultado en DX:AX
 
 > 💡 Es recomendable limpiar `DX` con `MOV DX, 0` antes de una multiplicación de 16 bits, para que la parte alta de nuestro resultado no contenga datos residuales.
 
----
-
-### 7. Multiplicación con signo — `IMUL`
+### Multiplicación con signo — `IMUL`
 
 `IMUL` (_Integer Multiply_) es la versión con signo de `MUL`. Interpreta los operandos como números en complemento a dos, lo que nos permite manejar valores negativos correctamente. Su sintaxis es idéntica a `MUL`:
 
@@ -275,7 +270,9 @@ IMUL BX       ; resultado en DX:AX
 
 ---
 
-### 8. División sin signo — `DIV`
+## División (DIV e IDIV)
+
+### División sin signo — `DIV`
 
 La división requiere que coloquemos el dividendo en el registro correcto antes de ejecutarla. Produce **dos resultados**: el cociente y el residuo, guardados en registros separados.
 
@@ -291,22 +288,21 @@ MOV BL, 2d
 DIV BL        ; AL = cociente, AH = residuo
 ```
 
-**Para 16 bits** — el dividendo se coloca en `AX`. En este ejemplo, dividiremos **3200 / 282**:
+**Para 16 bits** — el dividendo se coloca en `DX:AX`. En este ejemplo, dividiremos **3200 / 282**:
 
 ```nasm
 MOV AX, 3200d
 MOV BX, 282d
+MOV DX, 0     ; Limpiar DX para asegurar que el dividendo es solo AX
 DIV BX        ; AX = cociente, DX = residuo
 ```
 
 > ⚠️ **Dos errores que detienen nuestro programa:**
 >
 > 1. **División por cero** — el procesador lanza una interrupción de error inmediatamente.
-> 2. **Cociente demasiado grande** — si el cociente no cabe en `AL` (o `AX`), también se genera una interrupción.
+> 2. **Cociente demasiado grande** — si el cociente no cabe en el registro destino (AL para 8 bits, AX para 16 bits), también se genera una interrupción.
 
----
-
-### 9. División con signo — `IDIV`
+### División con signo — `IDIV`
 
 `IDIV` (_Integer Divide_) es la versión con signo de `DIV`. Interpreta los dividendos y divisores como números con signo, permitiendo obtener cocientes negativos.
 
@@ -323,12 +319,14 @@ IDIV BL       ; AL = cociente, AH = residuo
 
 ---
 
-### 10. Estructurar nuestro código con subrutinas: `CALL` y `RET`
+## Subrutinas (CALL y RET)
+
+### Estructurar nuestro código con subrutinas
 
 Conforme nuestros programas crecen, conviene separar las operaciones en bloques reutilizables llamados **subrutinas**. En ensamblador lo logramos con el par `CALL` / `RET`:
 
-- **`CALL nombre`** — salta a la subrutina y guarda automáticamente en la pila la dirección de la instrucción siguiente (la _dirección de retorno_).
-- **`RET`** — extrae esa dirección de la pila y regresa exactamente al punto donde ejecutamos el `CALL`.
+*   **`CALL nombre`** — salta a la subrutina y guarda automáticamente en la pila la dirección de la instrucción siguiente (la _dirección de retorno_).
+*   **`RET`** — extrae esa dirección de la pila y regresa exactamente al punto donde ejecutamos el `CALL`.
 
 ```nasm
     CALL mi_subrutina      ; salta y guarda la dirección de retorno
@@ -343,50 +341,19 @@ mi_subrutina:
 
 ---
 
-### Práctica Guiada — Cálculo de promedio entero
+## Práctica Guiada
+
+### Cálculo de promedio entero
 
 **Descripción:** Desarrollaremos un programa que calcule el promedio entero de tres números (**8**, **15** y **9**). Utilizaremos una estructura modular basada en subrutinas para limpiar el estado del procesador, realizar la suma acumulada y obtener el promedio final.
 
 **Requisitos:**
 
-- **Limpieza de registros:** Implementar una subrutina `clean` que ponga en cero los registros de propósito general (`AX`, `BX`, `CX`, `DX`) antes de iniciar.
-- **Definición de valores:** Cargar los números 8, 15 y 9 en los registros `BL`, `CL` y `DL` respectivamente.
-- **Subrutina de suma:** Implementar una subrutina `suma` que acumule la suma de los tres registros en el acumulador `AL`.
-- **Subrutina de promedio:** Implementar una subrutina `promedio` que realice la división del total acumulado entre 3 (usando el registro `BH` como divisor). El cociente final debe quedar en `AL`.
-- **Flujo principal:** El `main` debe coordinar las llamadas en el orden: `clean`, carga de datos, `suma` y `promedio`. Finalizar con `INT 20H`.
-
----
-
-## Parte III — Ejercicios de Aplicación
-
-Hemos llegado al final de nuestra guía teórica y ahora es el momento de que pongamos a prueba lo aprendido con algunos retos prácticos.
-
-### Ejercicio 1 — Área y perímetro de un rectángulo
-
-**Descripción:** Dado el ancho y el alto de un rectángulo cargados en `BL` y `CL` respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.
-
-**Requisitos:**
-
-- Calcular el área (`ancho × alto`) con `MUL` dentro de una subrutina `calc_area`. Resultado en `AX`.
-- Calcular el perímetro (`2 × (ancho + alto)`) con `ADD` y `MUL` dentro de una subrutina `calc_perimetro`. Resultado en `AX`.
-- El `main` llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria:
-  - Área en `[200H]`
-  - Perímetro en `[202H]`
-
-### Ejercicio 2 — Factura con descuento
-
-**Descripción:** Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en `AX`. Nuestro programa calculará el descuento y el total a pagar.
-
-Usa el subtotal = 240.
-
-**Requisitos:**
-
-- Calcular el descuento con la fórmula `(subtotal × 15) / 100`. Resultado en `AL`.
-- Calcular el total restando el descuento al subtotal. Resultado en `AX`.
-- Organizar la lógica en tres subrutinas:
-  - `calc_descuento` — realiza la multiplicación y la división; deja el descuento en `AL`.
-  - `calc_total` — resta el descuento al subtotal; deja el total en `AX`.
-  - `guardar_resultados` — escribe el descuento en `[300H]` y el total en `[302H]`.
+*   **Limpieza de registros:** Implementar una subrutina `clean` que ponga en cero los registros de propósito general (`AX`, `BX`, `CX`, `DX`) antes de iniciar.
+*   **Definición de valores:** Cargar los números 8, 15 y 9 en los registros `BL`, `CL` y `DL` respectivamente.
+*   **Subrutina de suma:** Implementar una subrutina `suma` que acumule la suma de los tres registros en el acumulador `AL`.
+*   **Subrutina de promedio:** Implementar una subrutina `promedio` que realice la división del total acumulado entre 3 (usando el registro `BH` como divisor). El cociente final debe quedar en `AL`.
+*   **Flujo principal:** El `main` debe coordinar las llamadas en el orden: `clean`, carga de datos, `suma` y `promedio`. Finalizar con `INT 20H`.
 
 ---
 
@@ -426,12 +393,43 @@ Usa el subtotal = 240.
 
 ---
 
-## Indicaciones de entrega
+## Ejercicios e Indicaciones de entrega
+
+### Ejercicio 1 — Área y perímetro de un rectángulo
+
+**Descripción:** Dado el ancho y el alto de un rectángulo cargados en `BL` y `CL` respectivamente (usa ancho = 12, alto = 7), calcularemos el área y el perímetro.
+
+**Requisitos:**
+
+*   Calcular el área (`ancho × alto`) con `MUL` dentro de una subrutina `calc_area`. Resultado en `AX`.
+*   Calcular el perímetro (`2 × (ancho + alto)`) con `ADD` y `MUL` dentro de una subrutina `calc_perimetro`. Resultado en `AX`.
+*   El `main` llama a ambas subrutinas secuencialmente y guarda cada resultado en memoria:
+    *   Área en `[200H]`
+    *   Perímetro en `[202H]`
+
+### Ejercicio 2 — Factura con descuento
+
+**Descripción:** Simularemos un sistema de facturación que aplica un descuento del 15% a un subtotal cargado en `AX`. Nuestro programa calculará el descuento y el total a pagar.
+
+Usa el subtotal = 240.
+
+**Requisitos:**
+
+*   Calcular el descuento con la fórmula `(subtotal × 15) / 100`. Resultado en `AL`.
+*   Calcular el total restando el descuento al subtotal. Resultado en `AX`.
+*   Organizar la lógica en tres subrutinas:
+    *   `calc_descuento` — realiza la multiplicación y la división; deja el descuento en `AL`.
+    *   `calc_total` — resta el descuento al subtotal; deja el total en `AX`.
+    *   `guardar_resultados` — escribe el descuento en `[300H]` y el total en `[302H]`.
+
+---
+
+### Indicaciones de entrega
 
 Los ejercicios realizados en este laboratorio deben entregarse a través de la plataforma **Moodle**. Por favor, asegúrate de cumplir con los siguientes requisitos:
 
 1.  Ubicar el entregable bajo el nombre **"Labo 2 (Sección x)"**.
 2.  Subir cada archivo de código fuente en su respectiva sección.
 3.  El formato de nombre de los archivos debe ser estrictamente el siguiente:
-    - **Ejercicio 1:** `uno[NombreApellido].asm` (Ejemplo: `unoOscarMenjivar.asm`)
-    - **Ejercicio 2:** `dos[NombreApellido].asm` (Ejemplo: `dosOscarMenjivar.asm`)
+    *   **Ejercicio 1:** `uno[NombreApellido].asm` (Ejemplo: `unoOscarMenjivar.asm`)
+    *   **Ejercicio 2:** `dos[NombreApellido].asm` (Ejemplo: `dosOscarMenjivar.asm`)
